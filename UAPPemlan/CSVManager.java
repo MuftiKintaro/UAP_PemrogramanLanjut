@@ -63,18 +63,30 @@ public class CSVManager {
 
     public static List<Peminjaman> loadPeminjaman() {
         List<Peminjaman> list = new ArrayList<>();
+
         try (BufferedReader br = new BufferedReader(new FileReader(DATA_PATH + "peminjaman.csv"))) {
             String line;
             boolean first = true;
+
             while ((line = br.readLine()) != null) {
-                if (first) { first = false; continue; }
+                if (first) {
+                    first = false;
+                    continue;   // lewati header
+                }
+
                 Peminjaman p = Peminjaman.fromCSV(line);
-                if (p != null) list.add(p);
+                if (p != null) {
+                    list.add(p);
+                }
             }
+
         } catch (IOException e) {
-            createSampleData();
-            return loadPeminjaman();
+            // Jika file belum ada / gagal dibaca:
+            // Optional: buat sample data sekali saja
+            createSampleData();   // boleh dihapus kalau tidak ingin auto-sample
+            // JANGAN memanggil loadPeminjaman() lagi di sini
         }
+
         return list;
     }
 
@@ -209,7 +221,7 @@ public class CSVManager {
         return true;
     }
 
-    private static void createSampleData() {
+    public static void createSampleData() {
         // Buat data sample
         List<Buku> sampleBuku = Arrays.asList(
                 new Buku("A001", "Pengantar Pemrograman", "John Doe", "1234567890", 5),
@@ -224,4 +236,3 @@ public class CSVManager {
         saveAnggota(sampleAnggota);
     }
 }
-
