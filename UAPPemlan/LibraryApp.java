@@ -6,7 +6,6 @@ import java.io.File;
 
 public class LibraryApp {
     public static void main(String[] args) {
-        // Buat folder data jika belum ada
         new File("data").mkdirs();
         SwingUtilities.invokeLater(() -> {
             try {

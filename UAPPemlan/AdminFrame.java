@@ -17,6 +17,7 @@ public class AdminFrame extends JFrame {
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setSize(1000, 650);
         setLocationRelativeTo(null);
+        setJMenuBar(createMenuBar());
 
         JTabbedPane tabbedPane = new JTabbedPane();
         tabbedPane.addTab("Dashboard", createDashboardPanel());
@@ -35,17 +36,20 @@ public class AdminFrame extends JFrame {
         JPanel panel = new JPanel(new GridLayout(2, 2, 20, 20));
         panel.setBorder(BorderFactory.createEmptyBorder(30, 30, 30, 30));
 
-        JLabel lblBuku = new JLabel();
-        JLabel lblAnggota = new JLabel();
-        JLabel lblPinjam = new JLabel();
-        JLabel lblPelanggaran = new JLabel();
+        int totalBuku = CSVManager.loadBuku().size();
+        int totalAnggota = CSVManager.loadAnggota().size();
 
-        updateDashboard(lblBuku, lblAnggota, lblPinjam, lblPelanggaran);
+        long peminjamanAktif = CSVManager.loadPeminjaman()
+                .stream()
+                .filter(p -> "active".equals(p.getStatus()))
+                .count();
 
-        panel.add(lblBuku);
-        panel.add(lblAnggota);
-        panel.add(lblPinjam);
-        panel.add(lblPelanggaran);
+        int totalPelanggaran = CSVManager.loadPelanggaran().size();
+
+        panel.add(createInfoCard("📚 Total Buku", totalBuku));
+        panel.add(createInfoCard("👤 Total Anggota", totalAnggota));
+        panel.add(createInfoCard("📄 Peminjaman Aktif", peminjamanAktif));
+        panel.add(createInfoCard("⚠️ Pelanggaran", totalPelanggaran));
 
         return panel;
     }
@@ -63,13 +67,44 @@ public class AdminFrame extends JFrame {
         pelanggaran.setText("⚠️ Total Pelanggaran: " + CSVManager.loadPelanggaran().size());
     }
 
+    private JPanel createInfoCard(String title, long value) {
+        JPanel card = new JPanel(new BorderLayout());
+        card.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(Color.LIGHT_GRAY),
+                BorderFactory.createEmptyBorder(15, 15, 15, 15)
+        ));
+
+        JLabel lblTitle = new JLabel(title);
+        lblTitle.setFont(new Font("SansSerif", Font.BOLD, 16));
+
+        JLabel lblValue = new JLabel(String.valueOf(value));
+        lblValue.setFont(new Font("SansSerif", Font.BOLD, 32));
+        lblValue.setHorizontalAlignment(SwingConstants.CENTER);
+
+        card.add(lblTitle, BorderLayout.NORTH);
+        card.add(lblValue, BorderLayout.CENTER);
+
+        return card;
+    }
+
     // =============================
     // KELOLA BUKU
     // =============================
     private JPanel createKelolaBukuPanel() {
-        JPanel panel = new JPanel(new BorderLayout(10, 10));
+        JPanel panel = new JPanel(new BorderLayout(15, 15));
+        panel.setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
 
-        JTextField txtKode = new JTextField(10);
+        // =============================
+        // FORM INPUT (KIRI)
+        // =============================
+        JPanel formPanel = new JPanel(new GridBagLayout());
+        formPanel.setBorder(BorderFactory.createTitledBorder("Form Buku"));
+
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(5, 5, 5, 5);
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+
+        JTextField txtKode = new JTextField(12);
         txtKode.setEditable(false);
 
         JTextField txtJudul = new JTextField(15);
@@ -84,6 +119,51 @@ public class AdminFrame extends JFrame {
         JButton btnGenerate = new JButton("Generate Kode");
         JButton btnTambah = new JButton("Tambah Buku");
 
+        // Row 0
+        gbc.gridx = 0; gbc.gridy = 0;
+        formPanel.add(new JLabel("Kategori"), gbc);
+        gbc.gridx = 1;
+        formPanel.add(cbKategori, gbc);
+
+        // Row 1
+        gbc.gridx = 0; gbc.gridy++;
+        formPanel.add(new JLabel("Kode Buku"), gbc);
+        gbc.gridx = 1;
+        formPanel.add(txtKode, gbc);
+
+        // Row 2
+        gbc.gridx = 0; gbc.gridy++;
+        formPanel.add(new JLabel("Judul"), gbc);
+        gbc.gridx = 1;
+        formPanel.add(txtJudul, gbc);
+
+        // Row 3
+        gbc.gridx = 0; gbc.gridy++;
+        formPanel.add(new JLabel("Penulis"), gbc);
+        gbc.gridx = 1;
+        formPanel.add(txtPenulis, gbc);
+
+        // Row 4
+        gbc.gridx = 0; gbc.gridy++;
+        formPanel.add(new JLabel("ISBN"), gbc);
+        gbc.gridx = 1;
+        formPanel.add(txtISBN, gbc);
+
+        // Row 5
+        gbc.gridx = 0; gbc.gridy++;
+        formPanel.add(new JLabel("Stok"), gbc);
+        gbc.gridx = 1;
+        formPanel.add(txtStok, gbc);
+
+        // Row 6 - Buttons
+        gbc.gridx = 0; gbc.gridy++;
+        formPanel.add(btnGenerate, gbc);
+        gbc.gridx = 1;
+        formPanel.add(btnTambah, gbc);
+
+        // =============================
+        // EVENT
+        // =============================
         btnGenerate.addActionListener(e -> {
             char kategori = cbKategori.getSelectedItem().toString().charAt(0);
             txtKode.setText(CSVManager.generateKodeBuku(kategori));
@@ -93,35 +173,31 @@ public class AdminFrame extends JFrame {
                 tambahBuku(txtKode, txtJudul, txtPenulis, txtISBN, txtStok)
         );
 
-        JPanel form = new JPanel(new GridLayout(6, 2, 10, 10));
-        form.setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
-
-        form.add(new JLabel("Kategori"));
-        form.add(cbKategori);
-        form.add(new JLabel("Kode Buku"));
-        form.add(txtKode);
-        form.add(new JLabel("Judul"));
-        form.add(txtJudul);
-        form.add(new JLabel("Penulis"));
-        form.add(txtPenulis);
-        form.add(new JLabel("ISBN"));
-        form.add(txtISBN);
-        form.add(new JLabel("Stok"));
-        form.add(txtStok);
-
-        JPanel buttonPanel = new JPanel();
-        buttonPanel.add(btnGenerate);
-        buttonPanel.add(btnTambah);
-
+        // =============================
+        // TABEL BUKU (KANAN)
+        // =============================
         modelBuku = new DefaultTableModel(
                 new String[]{"Kode", "Judul", "Penulis", "ISBN", "Stok", "Rating"}, 0
         );
         JTable table = new JTable(modelBuku);
-        JScrollPane scroll = new JScrollPane(table);
+        table.setRowHeight(26);
+        table.setFillsViewportHeight(true);
 
-        panel.add(form, BorderLayout.NORTH);
-        panel.add(buttonPanel, BorderLayout.CENTER);
-        panel.add(scroll, BorderLayout.SOUTH);
+        JScrollPane scrollPane = new JScrollPane(table);
+        scrollPane.setBorder(BorderFactory.createTitledBorder("Daftar Buku"));
+
+        // =============================
+        // SPLIT PANEL
+        // =============================
+        JSplitPane splitPane = new JSplitPane(
+                JSplitPane.HORIZONTAL_SPLIT,
+                formPanel,
+                scrollPane
+        );
+        splitPane.setDividerLocation(330);
+        splitPane.setResizeWeight(0);
+
+        panel.add(splitPane, BorderLayout.CENTER);
 
         loadBukuTable();
         return panel;
@@ -221,17 +297,64 @@ public class AdminFrame extends JFrame {
     // DATA PEMINJAMAN
     // =============================
     private JPanel createPeminjamanPanel() {
-        JPanel panel = new JPanel(new BorderLayout());
+        JPanel panel = new JPanel(new BorderLayout(10, 10));
+        panel.setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
 
+        // =============================
+        // JUDUL
+        // =============================
+        JLabel lblTitle = new JLabel("Data Peminjaman Buku");
+        lblTitle.setFont(new Font("SansSerif", Font.BOLD, 18));
+
+        JPanel titlePanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        titlePanel.add(lblTitle);
+
+        // =============================
+        // TABEL PEMINJAMAN
+        // =============================
         modelPeminjaman = new DefaultTableModel(
-                new String[]{"ID", "Anggota", "Buku", "Pinjam", "Batas", "Status"}, 0
-        );
+                new String[]{"ID", "Anggota", "Buku", "Tgl Pinjam", "Batas", "Status"}, 0
+        ) {
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return false; // tabel read-only
+            }
+        };
+
         JTable table = new JTable(modelPeminjaman);
-        JScrollPane scroll = new JScrollPane(table);
+        table.setRowHeight(26);
+        table.setFillsViewportHeight(true);
 
-        panel.add(scroll);
+        // Lebar kolom (biar enak dibaca)
+        table.getColumnModel().getColumn(0).setPreferredWidth(80);   // ID
+        table.getColumnModel().getColumn(1).setPreferredWidth(120);  // Anggota
+        table.getColumnModel().getColumn(2).setPreferredWidth(120);  // Buku
+        table.getColumnModel().getColumn(3).setPreferredWidth(100);  // Pinjam
+        table.getColumnModel().getColumn(4).setPreferredWidth(100);  // Batas
+        table.getColumnModel().getColumn(5).setPreferredWidth(80);   // Status
+
+        JScrollPane scrollPane = new JScrollPane(table);
+        scrollPane.setBorder(BorderFactory.createTitledBorder("Daftar Peminjaman"));
+
+        // =============================
+        // INFO PANEL (BAWAH)
+        // =============================
+        JLabel lblInfo = new JLabel(
+                "Keterangan: Status 'active' = masih dipinjam, 'returned' = sudah dikembalikan"
+        );
+        lblInfo.setFont(new Font("SansSerif", Font.ITALIC, 12));
+
+        JPanel infoPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        infoPanel.add(lblInfo);
+
+        // =============================
+        // ADD KE PANEL UTAMA
+        // =============================
+        panel.add(titlePanel, BorderLayout.NORTH);
+        panel.add(scrollPane, BorderLayout.CENTER);
+        panel.add(infoPanel, BorderLayout.SOUTH);
+
         loadPeminjamanTable();
-
         return panel;
     }
 
@@ -246,6 +369,34 @@ public class AdminFrame extends JFrame {
                     p.getTglBatasKembali(),
                     p.getStatus()
             });
+        }
+    }
+
+    private JMenuBar createMenuBar() {
+        JMenuBar menuBar = new JMenuBar();
+
+        JMenu menuAkun = new JMenu("Akun");
+        JMenuItem menuLogout = new JMenuItem("Logout");
+
+        menuLogout.addActionListener(e -> logout());
+
+        menuAkun.add(menuLogout);
+        menuBar.add(menuAkun);
+
+        return menuBar;
+    }
+
+    private void logout() {
+        int confirm = JOptionPane.showConfirmDialog(
+                this,
+                "Apakah Anda yakin ingin logout?",
+                "Konfirmasi Logout",
+                JOptionPane.YES_NO_OPTION
+        );
+
+        if (confirm == JOptionPane.YES_OPTION) {
+            dispose();
+            new LoginFrame();
         }
     }
 }

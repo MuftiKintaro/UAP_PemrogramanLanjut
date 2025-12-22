@@ -7,18 +7,16 @@ import java.time.LocalDate;
 import java.util.List;
 
 public class UserFrame extends JFrame {
-
     private Anggota user;
-
     private JTable tableBuku;
     private JTable tableRiwayat;
-
     private DefaultTableModel modelBuku;
     private DefaultTableModel modelRiwayat;
 
     public UserFrame(Anggota user) {
         this.user = user;
         initUI();
+        setJMenuBar(createMenuBar());
     }
 
     private void initUI() {
@@ -158,22 +156,67 @@ public class UserFrame extends JFrame {
     // TAB RIWAYAT
     // ==============================
     private JPanel createRiwayatPanel() {
-        JPanel panel = new JPanel(new BorderLayout());
+        JPanel panel = new JPanel(new BorderLayout(10, 10));
+        panel.setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
 
+        // JUDUL
+        JLabel lblTitle = new JLabel("Riwayat Peminjaman Anda");
+        lblTitle.setFont(new Font("SansSerif", Font.BOLD, 18));
+
+        JPanel titlePanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        titlePanel.add(lblTitle);
+
+        // TABEL RIWAYAT
         modelRiwayat = new DefaultTableModel(
                 new String[]{"ID", "Buku", "Tanggal Pinjam", "Batas Kembali", "Status"}, 0
-        );
+        ) {
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return false; // tabel read-only
+            }
+        };
+
         tableRiwayat = new JTable(modelRiwayat);
-        JScrollPane scroll = new JScrollPane(tableRiwayat);
+        tableRiwayat.setRowHeight(26);
+        tableRiwayat.setFillsViewportHeight(true);
 
+        // Atur lebar kolom
+        tableRiwayat.getColumnModel().getColumn(0).setPreferredWidth(80);   // ID
+        tableRiwayat.getColumnModel().getColumn(1).setPreferredWidth(150);  // Buku
+        tableRiwayat.getColumnModel().getColumn(2).setPreferredWidth(120);  // Pinjam
+        tableRiwayat.getColumnModel().getColumn(3).setPreferredWidth(140);  // Batas
+        tableRiwayat.getColumnModel().getColumn(4).setPreferredWidth(90);   // Status
+
+        JScrollPane scrollPane = new JScrollPane(tableRiwayat);
+        scrollPane.setBorder(BorderFactory.createTitledBorder("Daftar Riwayat Peminjaman"));
+
+        // PANEL BAWAH (INFO + TOMBOL)
         JButton btnKembali = new JButton("Kembalikan Buku");
+        btnKembali.setPreferredSize(new Dimension(160, 30));
 
-        JPanel bottomPanel = new JPanel();
-        bottomPanel.add(btnKembali);
+        JLabel lblInfo = new JLabel(
+                "Info: Pilih baris dengan status 'active' untuk mengembalikan buku"
+        );
+        lblInfo.setFont(new Font("SansSerif", Font.ITALIC, 12));
 
-        panel.add(scroll, BorderLayout.CENTER);
+        JPanel infoPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        infoPanel.add(lblInfo);
+
+        JPanel actionPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        actionPanel.add(btnKembali);
+
+        JPanel bottomPanel = new JPanel(new BorderLayout());
+        bottomPanel.setBorder(BorderFactory.createEmptyBorder(5, 0, 0, 0));
+        bottomPanel.add(infoPanel, BorderLayout.WEST);
+        bottomPanel.add(actionPanel, BorderLayout.EAST);
+
+
+        // SUSUN KE PANEL UTAMA
+        panel.add(titlePanel, BorderLayout.NORTH);
+        panel.add(scrollPane, BorderLayout.CENTER);
         panel.add(bottomPanel, BorderLayout.SOUTH);
 
+        // EVENT
         btnKembali.addActionListener(e -> kembalikanBuku());
 
         loadRiwayat();
@@ -229,4 +272,33 @@ public class UserFrame extends JFrame {
             JOptionPane.showMessageDialog(this, "Gagal mengembalikan buku!");
         }
     }
+
+    private JMenuBar createMenuBar() {
+        JMenuBar menuBar = new JMenuBar();
+
+        JMenu menuAkun = new JMenu("Akun");
+        JMenuItem menuLogout = new JMenuItem("Logout");
+
+        menuLogout.addActionListener(e -> logout());
+
+        menuAkun.add(menuLogout);
+        menuBar.add(menuAkun);
+
+        return menuBar;
+    }
+
+    private void logout() {
+        int confirm = JOptionPane.showConfirmDialog(
+                this,
+                "Apakah Anda yakin ingin logout?",
+                "Konfirmasi Logout",
+                JOptionPane.YES_NO_OPTION
+        );
+
+        if (confirm == JOptionPane.YES_OPTION) {
+            dispose();          // tutup UserFrame
+            new LoginFrame();   // kembali ke login
+        }
+    }
+
 }
