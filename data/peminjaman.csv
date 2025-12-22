@@ -1,0 +1,6 @@
+id,anggota_id,buku_id,tgl_pinjam,tgl_batas_kembali,tgl_kembali,status,rating_kondisi,rating_rekomendasi
+P0001,2,A001,2025-12-21,2025-12-28,2025-12-21,returned,,
+P0002,2,A001,2025-12-22,2025-12-29,2025-12-22,returned,,
+P0003,2,A001,2025-12-22,2025-12-29,2025-12-22,returned,,
+P0004,2,B001,2025-12-22,2025-12-29,2025-12-22,returned,,
+P0005,2,A002,2025-12-22,2025-12-29,2025-12-22,returned,,

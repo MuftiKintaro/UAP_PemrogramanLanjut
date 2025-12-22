@@ -1,0 +1,4 @@
+kode_buku,title,author,isbn,stock,avg_rating
+A001,Pengantar Pemrograman,John Doe,1234567890,5,0,0
+B001,Al-Quran Terjemah,Kemenag,0987654321,3,0,0
+A002,Gintama,Suzuki,1234567800,5,0,0
