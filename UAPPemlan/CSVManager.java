@@ -9,6 +9,7 @@ import java.util.List;
 public class CSVManager {
     private static final DateTimeFormatter DF = DateTimeFormatter.ofPattern("yyyy-MM-dd");
     private static final String DATA_PATH = "data/";
+    private static final String ANGGOTA_FILE = DATA_PATH + "anggota.csv";
 
     public static List<Buku> loadBuku() {
         List<Buku> list = new ArrayList<>();
@@ -38,18 +39,69 @@ public class CSVManager {
 
     public static List<Anggota> loadAnggota() {
         List<Anggota> list = new ArrayList<>();
-        try (BufferedReader br = new BufferedReader(new FileReader(DATA_PATH + "anggota.csv"))) {
+
+        try (BufferedReader br = new BufferedReader(new FileReader(ANGGOTA_FILE))) {
             String line;
-            boolean first = true;
+
+            // skip header
+            br.readLine();
+
             while ((line = br.readLine()) != null) {
-                if (first) { first = false; continue; }
-                Anggota a = Anggota.fromCSV(line);
-                if (a != null) list.add(a);
+
+                // SKIP baris kosong
+                if (line.trim().isEmpty()) {
+                    continue;
+                }
+
+                String[] data = line.split(",");
+
+                // VALIDASI JUMLAH KOLOM
+                if (data.length < 5) {
+                    System.err.println("Baris anggota tidak valid: " + line);
+                    continue;
+                }
+
+                list.add(new Anggota(
+                        data[0].trim(), // id
+                        data[1].trim(), // nama
+                        data[2].trim(), // username
+                        data[3].trim(), // password
+                        data[4].trim()  // status
+                ));
             }
         } catch (IOException e) {
-            // create admin sample
+            e.printStackTrace();
         }
         return list;
+    }
+
+    public static String generateIdAnggota() {
+        List<Anggota> list = loadAnggota();
+        int next = list.size() + 1;
+        return String.format("A%03d", next);
+    }
+
+    public static boolean tambahAnggota(Anggota a) {
+        for (Anggota ag : loadAnggota()) {
+            if (ag.getUsername().equalsIgnoreCase(a.getUsername())) {
+                return false;
+            }
+        }
+
+        try (BufferedWriter bw = new BufferedWriter(new FileWriter(ANGGOTA_FILE, true))) {
+            bw.newLine();
+            bw.write(String.join(",",
+                    a.getId(),
+                    a.getNama(),
+                    a.getUsername(),
+                    a.getPassword(),
+                    a.getStatus()
+            ));
+            return true;
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return false;
     }
 
     public static void saveAnggota(List<Anggota> list) {
@@ -234,5 +286,38 @@ public class CSVManager {
                 new Anggota("2", "user1", "user123", "Andi", "Malang")
         );
         saveAnggota(sampleAnggota);
+    }
+    public static boolean hapusAnggota(String anggotaId) {
+        if (anggotaPunyaPinjamanAktif(anggotaId)) {
+            return false;
+        }
+
+        List<Anggota> list = loadAnggota();
+
+        try (BufferedWriter bw = new BufferedWriter(new FileWriter(ANGGOTA_FILE))) {
+            bw.write("id,nama,username,password,status");
+            for (Anggota a : list) {
+                if (!a.getId().equals(anggotaId)) {
+                    bw.newLine();
+                    bw.write(String.join(",",
+                            a.getId(), a.getNama(), a.getUsername(), a.getPassword(), a.getStatus()
+                    ));
+                }
+            }
+            return true;
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    public static boolean anggotaPunyaPinjamanAktif(String anggotaId) {
+        for (Peminjaman p : loadPeminjaman()) {
+            if (p.getAnggotaId().equals(anggotaId)
+                    && p.getStatus().equals("active")) {
+                return true;
+            }
+        }
+        return false;
     }
 }

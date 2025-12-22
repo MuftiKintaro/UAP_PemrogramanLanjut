@@ -262,16 +262,116 @@ public class AdminFrame extends JFrame {
     // KELOLA ANGGOTA
     // =============================
     private JPanel createKelolaAnggotaPanel() {
-        JPanel panel = new JPanel(new BorderLayout());
+        JPanel panel = new JPanel(new BorderLayout(10,10));
+        panel.setBorder(BorderFactory.createEmptyBorder(15,15,15,15));
 
-        modelAnggota = new DefaultTableModel(
-                new String[]{"ID", "Username", "Nama", "Status"}, 0
+        // FORM
+        JTextField txtNama = new JTextField(15);
+        JTextField txtUsername = new JTextField(15);
+        JTextField txtPassword = new JTextField(15);
+
+        JButton btnTambah = new JButton("Tambah Anggota");
+
+        JPanel form = new JPanel(new GridLayout(4,2,10,10));
+        form.setBorder(BorderFactory.createTitledBorder("Form Anggota"));
+        form.add(new JLabel("Nama"));
+        form.add(txtNama);
+        form.add(new JLabel("Username"));
+        form.add(txtUsername);
+        form.add(new JLabel("Password"));
+        form.add(txtPassword);
+        form.add(new JLabel());
+        form.add(btnTambah);
+
+        // TABLE
+        DefaultTableModel model = new DefaultTableModel(
+                new String[]{"ID","Nama","Username","Status"},0
         );
-        JTable table = new JTable(modelAnggota);
+        JTable table = new JTable(model);
         JScrollPane scroll = new JScrollPane(table);
 
-        panel.add(scroll);
-        loadAnggotaTable();
+        JButton btnHapus = new JButton("Hapus Anggota");
+
+        JPanel right = new JPanel(new BorderLayout(5,5));
+        right.add(scroll, BorderLayout.CENTER);
+        right.add(btnHapus, BorderLayout.SOUTH);
+
+        panel.add(form, BorderLayout.WEST);
+        panel.add(right, BorderLayout.CENTER);
+
+        // LOAD
+        Runnable load = () -> {
+            model.setRowCount(0);
+            for (Anggota a : CSVManager.loadAnggota()) {
+                model.addRow(new Object[]{
+                        a.getId(), a.getNama(), a.getUsername(), a.getStatus()
+                });
+            }
+        };
+        load.run();
+
+        // EVENT TAMBAH
+        btnTambah.addActionListener(e -> {
+
+            String nama = txtNama.getText().trim();
+            String username = txtUsername.getText().trim();
+            String password = txtPassword.getText().trim();
+
+            // VALIDASI INPUT KOSONG
+            if (nama.isEmpty() || username.isEmpty() || password.isEmpty()) {
+                JOptionPane.showMessageDialog(
+                        this,
+                        "Nama, Username, dan Password tidak boleh kosong!",
+                        "Input Tidak Valid",
+                        JOptionPane.ERROR_MESSAGE
+                );
+                return;
+            }
+
+            String id = CSVManager.generateIdAnggota();
+
+            Anggota a = new Anggota(
+                    id,
+                    nama,
+                    username,
+                    password,
+                    "aktif"
+            );
+
+            if (CSVManager.tambahAnggota(a)) {
+                JOptionPane.showMessageDialog(this,"Anggota berhasil ditambahkan");
+
+                // reset field
+                txtNama.setText("");
+                txtUsername.setText("");
+                txtPassword.setText("");
+
+                loadAnggotaTable();
+            } else {
+                JOptionPane.showMessageDialog(
+                        this,
+                        "Username sudah digunakan",
+                        "Gagal",
+                        JOptionPane.WARNING_MESSAGE
+                );
+            }
+        });
+
+        // EVENT HAPUS
+        btnHapus.addActionListener(e -> {
+            int row = table.getSelectedRow();
+            if (row < 0) return;
+
+            String id = model.getValueAt(row,0).toString();
+
+            if (!CSVManager.hapusAnggota(id)) {
+                JOptionPane.showMessageDialog(this,
+                        "Anggota tidak dapat dihapus karena masih memiliki pinjaman aktif");
+            } else {
+                JOptionPane.showMessageDialog(this,"Anggota berhasil dihapus");
+                load.run();
+            }
+        });
 
         return panel;
     }
