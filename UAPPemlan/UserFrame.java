@@ -40,35 +40,53 @@ public class UserFrame extends JFrame {
     // TAB CARI BUKU
     // ==============================
     private JPanel createCariBukuPanel() {
-        JPanel panel = new JPanel(new BorderLayout());
+        JPanel panel = new JPanel(new BorderLayout(10, 10));
+        panel.setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
 
-        // Search
+        // =========================
+        // SEARCH PANEL (ATAS)
+        // =========================
+        JLabel lblCari = new JLabel("Cari Buku:");
         JTextField txtCari = new JTextField(20);
         JButton btnCari = new JButton("Cari");
 
-        JPanel searchPanel = new JPanel();
-        searchPanel.add(new JLabel("Cari Buku:"));
+        JPanel searchPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 5));
+        searchPanel.add(lblCari);
         searchPanel.add(txtCari);
         searchPanel.add(btnCari);
 
-        // Table buku
+        // =========================
+        // TABLE BUKU (TENGAH)
+        // =========================
         modelBuku = new DefaultTableModel(
                 new String[]{"Kode", "Judul", "Penulis", "Stok", "Rating"}, 0
         );
         tableBuku = new JTable(modelBuku);
-        JScrollPane scroll = new JScrollPane(tableBuku);
+        tableBuku.setRowHeight(26);
+        tableBuku.setFillsViewportHeight(true);
 
-        // Button pinjam
+        JScrollPane scrollPane = new JScrollPane(tableBuku);
+        scrollPane.setBorder(BorderFactory.createTitledBorder("Daftar Buku"));
+
+        // =========================
+        // ACTION PANEL (BAWAH)
+        // =========================
         JButton btnPinjam = new JButton("Pinjam Buku");
+        btnPinjam.setPreferredSize(new Dimension(140, 30));
 
-        JPanel actionPanel = new JPanel();
+        JPanel actionPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         actionPanel.add(btnPinjam);
 
+        // =========================
+        // ADD KE PANEL UTAMA
+        // =========================
         panel.add(searchPanel, BorderLayout.NORTH);
-        panel.add(scroll, BorderLayout.CENTER);
+        panel.add(scrollPane, BorderLayout.CENTER);
         panel.add(actionPanel, BorderLayout.SOUTH);
 
-        // Event
+        // =========================
+        // EVENT
+        // =========================
         btnCari.addActionListener(e -> loadBuku(txtCari.getText()));
         btnPinjam.addActionListener(e -> pinjamBuku());
 
@@ -102,18 +120,39 @@ public class UserFrame extends JFrame {
             return;
         }
 
-        String kodeBuku = (String) modelBuku.getValueAt(row, 0);
+        String kodeBuku = modelBuku.getValueAt(row, 0).toString();
 
+        int confirm = JOptionPane.showConfirmDialog(
+                this,
+                "Apakah Anda yakin ingin meminjam buku ini?",
+                "Konfirmasi Peminjaman",
+                JOptionPane.YES_NO_OPTION
+        );
+
+        if (confirm != JOptionPane.YES_OPTION) return;
+
+        // ==== CEK STOK ====
+        int stok = Integer.parseInt(modelBuku.getValueAt(row, 3).toString());
+        if (stok <= 0) {
+            JOptionPane.showMessageDialog(this,
+                    "Gagal meminjam buku.\nStok buku sudah habis.");
+            return;
+        }
+
+        // ==== PROSES PINJAM ====
         boolean success = CSVManager.pinjamBuku(user.getId(), kodeBuku);
+
         if (success) {
-            JOptionPane.showMessageDialog(this, "Buku berhasil dipinjam!");
+            JOptionPane.showMessageDialog(this,
+                    "Buku berhasil dipinjam.\nSilakan kembalikan sebelum batas waktu.");
             loadBuku("");
             loadRiwayat();
         } else {
             JOptionPane.showMessageDialog(this,
-                    "Gagal meminjam buku.\nStok habis atau akun dibatasi.");
+                    "Gagal meminjam buku.\nAkun Anda sedang dibatasi (suspend/blacklist).");
         }
     }
+
 
     // ==============================
     // TAB RIWAYAT
@@ -160,15 +199,28 @@ public class UserFrame extends JFrame {
 
     private void kembalikanBuku() {
         int row = tableRiwayat.getSelectedRow();
+
         if (row < 0) {
-            JOptionPane.showMessageDialog(this, "Pilih data peminjaman!");
+            JOptionPane.showMessageDialog(this, "Pilih data peminjaman terlebih dahulu!");
             return;
         }
 
-        String pinjamId = (String) modelRiwayat.getValueAt(row, 0);
-        String today = LocalDate.now().toString();
+        String pinjamId = modelRiwayat.getValueAt(row, 0).toString();
+        String today = java.time.LocalDate.now().toString();
+
+        int confirm = JOptionPane.showConfirmDialog(
+                this,
+                "Apakah Anda yakin ingin mengembalikan buku ini?",
+                "Konfirmasi Pengembalian",
+                JOptionPane.YES_NO_OPTION
+        );
+
+        if (confirm != JOptionPane.YES_OPTION) {
+            return;
+        }
 
         boolean success = CSVManager.prosesKembali(pinjamId, today);
+
         if (success) {
             JOptionPane.showMessageDialog(this, "Buku berhasil dikembalikan!");
             loadRiwayat();
